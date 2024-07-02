@@ -114,7 +114,6 @@ public class Model extends Observable {
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
         board.setViewingPerspective(side);
-        if(atLeastOneMoveExists(board)) changed = true;
 
         for(int c = 0; c < board.size(); c ++)
             for(int r = board.size()-1; r >= 0; r --) {
@@ -125,14 +124,12 @@ public class Model extends Observable {
                         if(t2 == null) continue;
                         if(t.value() == t2.value()){
                             board.move(c,r,t2);
-                            score = t.value() * 2;
+                            score += t.value() * 2;
                             r = r2;
                             changed = true;
                             break;
                         }
-                        else if(t2 == null){
-                            continue;
-                        }
+
                         else{
                             break;
                         }
@@ -149,6 +146,7 @@ public class Model extends Observable {
                         if(t2 != null){
                             board.move(c,r,t2);
                             changed = true;
+                            break;
                         }
                     }
                 }

@@ -107,4 +107,6 @@ public class TestUpOnly extends TestUtils {
         checkChanged(Side.NORTH, true, changed);
         checkModel(after, 4, 0, prevBoard, Side.NORTH);
     }
+
+
 }
