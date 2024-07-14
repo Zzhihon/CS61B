@@ -28,19 +28,19 @@ public class ArrayDeque<T> implements Deque<T> {
 
     @Override
     public void addFirst(T stuff) {
-        T[] newitems = (T[]) new Object[items.length + 1];
-        System.arraycopy(items, 0, newitems, 1, size);
-        newitems[0] = stuff;
-        items = newitems;
+        if(size == items.length) {
+            resize(size * 2);
+        }
+        items[size] = stuff;
         size += 1;
     }
 
     @Override
     public void addLast(T stuff) {
-        T[] newitems = (T[]) new Object[items.length + 1];
-        System.arraycopy(items, 0, newitems,0, size);
-        newitems[size] = stuff;
-        items = newitems;
+        if(size == items.length) {
+            resize(size * 2);
+        }
+        items[size] = stuff;
         size += 1;
     }
 

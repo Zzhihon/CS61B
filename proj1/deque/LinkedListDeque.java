@@ -126,6 +126,10 @@ public class LinkedListDeque<T> implements Deque<T> {
         return null;
     }
 
+    public T getLast() {
+        return sentinel.prev.item;
+    }
+
     @Override
     public void printDeque() {
         Node p = sentinel.next;

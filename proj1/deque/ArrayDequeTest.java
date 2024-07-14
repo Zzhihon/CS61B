@@ -14,7 +14,7 @@ public class ArrayDequeTest {
 
     @Test
     public void Testadd() {
-        ArrayDeque<Integer> ary = new ArrayDeque<Integer>();
+          ArrayDeque<Integer> ary = new ArrayDeque<Integer>();
         for(int i = 0; i < 10000; i ++) {
             ary.addLast(i);
         }
