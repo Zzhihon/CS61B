@@ -24,7 +24,6 @@ public class ArrayDequeTest {
         }
 
         System.out.println(ary.size());
-        System.out.println(ary.length());
 
     }
 
