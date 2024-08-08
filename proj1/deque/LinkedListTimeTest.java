@@ -35,7 +35,7 @@ public class LinkedListTimeTest {
             if (N.size() == Math.pow(2, tick) * 1000) {
                 Stopwatch sw = new Stopwatch();
                 for (int j = 0; j < ops; j += 1){
-                    N.getLast();
+                    //N.getLast();
                 }
                 Ns.addLast(N.size());
                 times.addLast(sw.elapsedTime());
