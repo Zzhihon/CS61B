@@ -1,6 +1,10 @@
 package capers;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 import static capers.Utils.*;
 
 /** A repository for Capers 
@@ -18,8 +22,8 @@ public class CapersRepository {
     static final File CWD = new File(System.getProperty("user.dir"));
 
     /** Main metadata folder. */
-    static final File CAPERS_FOLDER = null; // TODO Hint: look at the `join`
-                                            //      function in Utils
+    static final File CAPERS_FOLDER = join(CWD,".capers"); // TODO Hint: look at the `join`
+     //      function in Utils
 
     /**
      * Does required filesystem operations to allow for persistence.
@@ -30,8 +34,9 @@ public class CapersRepository {
      *    - dogs/ -- folder containing all of the persistent data for dogs
      *    - story -- file containing the current story
      */
-    public static void setupPersistence() {
-        // TODO
+    public static void setupPersistence() throws IOException {
+        CAPERS_FOLDER.mkdir();
+        Dog.DOG_FOLDER.mkdir();
     }
 
     /**
@@ -41,6 +46,16 @@ public class CapersRepository {
      */
     public static void writeStory(String text) {
         // TODO
+        File storyFile = join(CAPERS_FOLDER, "story");
+        String newContent;
+        if(!storyFile.exists()) {
+            newContent = text;
+        }else {
+            String oldContent = readContentsAsString(storyFile);
+            newContent = oldContent + "\n" + text;
+        }
+        writeContents(storyFile, newContent);
+        System.out.println(newContent);
     }
 
     /**
@@ -50,6 +65,9 @@ public class CapersRepository {
      */
     public static void makeDog(String name, String breed, int age) {
         // TODO
+        Dog dog = new Dog(name, breed, age);
+        dog.saveDog();
+        System.out.println(dog);
     }
 
     /**
@@ -60,5 +78,8 @@ public class CapersRepository {
      */
     public static void celebrateBirthday(String name) {
         // TODO
+        Dog dog_obj = Dog.fromFile(name);
+        dog_obj.haveBirthday();
+        dog_obj.saveDog();
     }
 }
