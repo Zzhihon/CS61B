@@ -93,28 +93,7 @@ public class BSTMap<K extends Comparable<K>,V extends Comparable<V>> implements 
         return root.searchRecursive(key) != null;
     }
 
-    public Iterator<K> iterator() {return new BSTMapIter();}
-
-    private class BSTMapIter implements Iterator<K> {
-        private BSTNode cur;
-        private List<BSTNode> BSTnodeslist = BSTtree_inorder(root);
-        public BSTMapIter() {cur = root;}
-        private int cnt = 1;
-
-        @Override
-        public boolean hasNext() {
-            return cur != null;
-        }
-
-        public K next() {
-
-            K ret = cur.key;
-            if(cnt == BSTnodeslist.size()) {cur = null;}
-            else cur = BSTnodeslist.get(cnt);
-            cnt += 1;
-            return ret;
-        }
-    }
+    public Iterator<K> iterator() {return keySet().iterator();}
 
     public void printInOrder() {
         List<BSTNode> BSTnodesList = BSTtree_inorder(root);
@@ -191,10 +170,5 @@ public class BSTMap<K extends Comparable<K>,V extends Comparable<V>> implements 
 
     @Override
     public V remove(K key, V value) {throw new UnsupportedOperationException();}
-
-
-
-
-
 
 }
