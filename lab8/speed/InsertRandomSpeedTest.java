@@ -5,9 +5,7 @@ import java.io.IOException;
 import java.util.Scanner;
 import edu.princeton.cs.algs4.Stopwatch;
 
-import hashmap.Map61B;
-import hashmap.ULLMap;
-import hashmap.MyHashMap;
+import hashmap.*;
 
 /** Performs a timing test on three different set implementations.
  *  @author Josh Hug
@@ -36,7 +34,7 @@ public class InsertRandomSpeedTest {
                     waitForPositiveInt(input), L);
 
             System.out.print("\nEnter # strings to insert into your hashmap.MyHashMap: ");
-            timeRandomMap61B(new MyHashMap<String, Integer>(),
+            timeRandomMap61B(new MyHashMap<>(),
                     waitForPositiveInt(input), L);
 
             System.out.print("\nEnter # strings to insert into Java's HashMap: ");
