@@ -249,8 +249,10 @@ public class Repository implements Serializable {
      */
     public void rm(String filename) {
         File file = getFilefromCWD(filename);
-        if(file.exists()) {
-            stagearea.rm(file);
+        if(stagearea.remove(file)) {
+            stagearea.saveStageArea(INDEX);
+        }else {
+            exit("No reason to remove the file.");
         }
     }
 }

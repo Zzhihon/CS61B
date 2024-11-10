@@ -2,6 +2,7 @@ package gitlet;
 
 import java.io.File;
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import static gitlet.Utils.*;
@@ -19,7 +20,7 @@ import static gitlet.MyUtils.*;
  *      blobid: String (Utils func: sha1(filepath,content))
  */
 
-public class Blob implements Serializable {
+public class Blob implements Serializable, Dumpable {
     private final File sourcefile;
     private final String filepath;
     private final byte[] content;
@@ -52,6 +53,9 @@ public class Blob implements Serializable {
         saveObjectFile(objfile, this);
     }
 
+    public void dump() {
+        System.out.printf("path: %s\ncontent: %s\n", sourcefile.getPath(), new String(content, StandardCharsets.UTF_8));
 
+    }
 
 }

@@ -5,6 +5,7 @@ package gitlet;
 import javax.xml.crypto.Data;
 import java.io.File;
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandomParameters;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -32,7 +33,7 @@ import static gitlet.Utils.*;
  *
  *  @author TODO
  */
-public class Commit implements Serializable{
+public class Commit implements Serializable, Dumpable{
     /**
      * TODO: add instance variables here.
      *
@@ -149,5 +150,14 @@ public class Commit implements Serializable{
         return logBuilder.toString();
     }
 
+    public String getLog() {
+        return "===\n" +
+                "commit " + CommitID + "\n" +
+                "Date: " + getTimestamp() + "\n" +
+                message + "\n\n";
+    }
 
+    public void dump() {
+        System.out.println(getLog() + tracked);
+    }
 }

@@ -61,6 +61,7 @@ public class Main {
             case "rm" :
                 filename = args[1];
                 new Repository().rm(filename);
+                break;
         }
     }
 }

@@ -65,7 +65,14 @@ public class MyUtils {
                 blob_shaid = entry.getValue();
             }
         }
+
         return blob_shaid;
+    }
+
+    public static void rm(File file) {
+        if (!file.delete()) {
+            throw new IllegalArgumentException(String.format("rm: %s: Failed to delete.", file.getPath()));
+        }
     }
 
 }

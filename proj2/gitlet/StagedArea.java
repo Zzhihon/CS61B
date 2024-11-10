@@ -116,10 +116,6 @@ public class StagedArea implements Serializable{
                     //correspond to the third type situation
                     added.remove(filepath);
                 }
-                else {
-                    System.err.println("can not add unchanged file");
-
-                }
             }
         }
     }
@@ -145,13 +141,9 @@ public class StagedArea implements Serializable{
      *
      */
     public Map<String, String> commit() {
-        for(Map.Entry<String, String> entry : added.entrySet()) {
-            tracked.put(entry.getKey(), entry.getValue());
-        }
-        for(Map.Entry<String, String> entry : tracked.entrySet()) {
-            if(removed.contains(entry.getKey())) {
-                tracked.remove(entry.getKey());
-            }
+        tracked.putAll(added);
+        for (String filePath : removed) {
+            tracked.remove(filePath);
         }
         clear();
         return tracked;
@@ -162,16 +154,20 @@ public class StagedArea implements Serializable{
         removed.clear();
     }
 
-    public void rm(File file) {
-        String filepath = file.getPath();
-        if (tracked.containsKey(filepath)) {
-            //removed from tracked and del from dir
-            removed.add(filepath);
-            file.delete();
+    public boolean remove(File file) {
+        String filePath = file.getPath();
+
+        String addedBlobId = added.remove(filePath);
+        if (addedBlobId != null) {
+            return true;
         }
-        else if (added.containsKey(filepath)) {
-            //removed from tracked
-            removed.add(filepath);
+
+        if (tracked.get(filePath) != null) {
+            if (file.exists()) {
+                rm(file);
+            }
+            return removed.add(filePath);
         }
+        return false;
     }
 }
