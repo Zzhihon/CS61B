@@ -36,6 +36,9 @@ public class Blob implements Serializable {
 
 
     }
+    public String getFilepath() {
+        return filepath;
+    }
 
     public String getContent() {
         return new String(content);

@@ -139,6 +139,8 @@ public class Repository implements Serializable {
         createDir(REFS_DIR);
 
         Commit inital_commit = new Commit();
+        writeObject(HEAD, inital_commit);
+        inital_commit.savecommit();
         /**
          * this initialise master to refs/HEADS/
          * file named master which store the latest CommitID
@@ -198,10 +200,15 @@ public class Repository implements Serializable {
      * then overwrite or create the file
      */
     public void checkout(String filename) {
+        Commit headcommit = getHeadCommit();
+        checkout(headcommit.CommitID(),filename);
+    }
+
+    public void checkout(String commitid, String filename) {
         File file = getFilefromCWD(filename);
         String filePath = getFilefromCWD(filename).getPath();
-        Commit headcommit = getHeadCommit();
-        String content = getTrackedcontent(headcommit, filePath);
+        Commit commit_tar = readObject(getobjFile(commitid), Commit.class);
+        String content = getBlobcontent(commit_tar, filePath);
         writeContents(file, content);
     }
 
@@ -209,8 +216,8 @@ public class Repository implements Serializable {
         return readObject(HEAD, Commit.class);
     }
 
-    private String getTrackedcontent(Commit headcommit, String filepath) {
-        String blob_shaid = getBlobid(headcommit, filepath);
+    private String getBlobcontent(Commit commit, String filepath) {
+        String blob_shaid = getBlobid(commit.tracked(), filepath);
         String dir_name = blob_shaid.substring(0,2);
         String sur_name = blob_shaid.substring(2);
         File target = join(OBJECTS_DIR,dir_name,sur_name);
@@ -218,26 +225,32 @@ public class Repository implements Serializable {
         return tar_blob.getContent();
     }
 
-    private String getBlobid(Commit headcommit, String filepath) {
 
-        String blob_shaid = null;
-        Map<String, String> tracked = headcommit.tracked();
-        for(Map.Entry<String, String> entry : tracked.entrySet()) {
-            //下面这个判断这里必须要用equals，用==会报错！
-            if(entry.getKey().equals(filepath)) {
-                blob_shaid = entry.getValue();
-            }
-        }
-        return blob_shaid;
-    }
 
     public void log() {
-        Commit latestCommit = getHeadCommit();
-        while(!latestCommit.CommitParentID().isEmpty()) {
-            latestCommit.putlog();
-            String shaid = latestCommit.CommitParentID().get(0);
-            latestCommit = readObject(getobjFile(shaid), Commit.class);
+        StringBuilder logBuilder = new StringBuilder();
+        Commit currentCommit = getHeadCommit();
+        while (true) {
+            logBuilder.append(currentCommit.putlog()).append("\n");
+            List<String> parentCommitIds = currentCommit.getParentID();
+            if (parentCommitIds.size() == 0) {
+                break;
+            }
+            String firstParentCommitId = parentCommitIds.get(0);
+            currentCommit = Commit.fromFile(firstParentCommitId);
         }
-        latestCommit.putlog();
+        System.out.print(logBuilder);
+    }
+
+    /**
+     * not in commit: removed from added
+     * in the commit: removed from tracked and del from dir
+     * @param filename
+     */
+    public void rm(String filename) {
+        File file = getFilefromCWD(filename);
+        if(file.exists()) {
+            stagearea.rm(file);
+        }
     }
 }

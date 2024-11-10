@@ -69,12 +69,12 @@ public class Commit implements Serializable{
      *   store
      */
     public Commit() {
-        message = "";
+        message = "initial commit";
         date = new Date(0);
         tracked = new HashMap<>();
-        CommitID = "0000000000000000000000000000000000000000";
-        parentID = null;
-        file = null;
+        parentID = new ArrayList<>();
+        CommitID = generateCommitID();
+        file = getobjFile(CommitID);
     }
 
     public Commit(String msg, Map<String, String> tr, List<String> parentid) {
@@ -101,7 +101,7 @@ public class Commit implements Serializable{
         return dateFormat.format(date);
     }
 
-    public List<String> CommitParentID() {
+    public List<String> getParentID() {
         return parentID;
     }
 
@@ -117,6 +117,10 @@ public class Commit implements Serializable{
         return tracked;
     }
 
+    public static Commit fromFile(String id) {
+        return readObject(getobjFile(id), Commit.class);
+    }
+
 
     /* TODO: fill in the rest of this class. */
 
@@ -129,12 +133,21 @@ public class Commit implements Serializable{
         saveObjectFile(file, this);
     }
 
-    public void putlog() {
-        System.out.println("===");
-        System.out.println("commit " + CommitID);
-        System.out.println("Date " + date);
-        System.out.println(message);
-        System.out.println("");
+    public String putlog() {
+        StringBuilder logBuilder = new StringBuilder();
+        logBuilder.append("===").append("\n");
+        logBuilder.append("commit").append(" ").append(CommitID).append("\n");
+        if (parentID.size() > 1) {
+            logBuilder.append("Merge:");
+            for (String parent : parentID) {
+                logBuilder.append(" ").append(parent, 0, 7);
+            }
+            logBuilder.append("\n");
+        }
+        logBuilder.append("Date:").append(" ").append(getTimestamp()).append("\n");
+        logBuilder.append(message).append("\n");
+        return logBuilder.toString();
     }
+
 
 }

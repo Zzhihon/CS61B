@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.*;
 import static gitlet.Utils.*;
+import static gitlet.MyUtils.*;
 
 /**
  *  Key features:
@@ -40,7 +41,25 @@ public class StagedArea implements Serializable{
      * is_modify_index Whenever an add operation is executed on a file, it is determined whether the operation do changes
         the index before the operation. If so, the stagearea object is written to the index.
      */
+
+
+    /**
+     * Consider what is the difference of tracked in Commit obj and StageArea obj
+     * Commit' `tracked` is entirely copy from the StageArea's `tracked`
+     * only when commit is implement, then the `tracked` will be update
+     * So, we can say that the `tracked` in StageArea is the same one in the latest commit of whole gitlet
+     *
+     */
     private final Map<String, String> tracked = new HashMap<>();
+
+    /**
+     * when a file implement add, what laws can be used to do that
+     *      whether a file should be put in the `added` is determined by the comparison with the one in tracked
+     *          if is new, then put
+     *          if is changed then put
+     *          else not put
+     *
+     */
     private final Map<String, String> added = new HashMap<>();
     private final Set<String> removed = new HashSet<>();
     private final String StageAreaID = "0";
@@ -74,11 +93,39 @@ public class StagedArea implements Serializable{
      * Tips: only the file differ from the one in commit can be added into stagearea
      */
     public void add(File file) {
-        String filepath = file.getPath();
+        String filepath = file.getPath(); // in user's directory
+        Blob dir_blob = new Blob(file); //file in user's directory
+        String blobid = dir_blob.getid(); //blobid is defined by it's path(filename) and content
+        String tracked_blobid = getBlobid(tracked, filepath); //file in `tracked`
 
-        Blob blob = new Blob(file);
-        String blobid = blob.getid();
-        added.put(filepath, blobid);
+        if(tracked_blobid == null) {
+            //a. file name changed, so the track not have to del the previous version of blob(use `removed`)
+            //   so just put this blob in the `added`
+            //b. not exist this file
+            add_put(filepath, blobid, dir_blob);
+        }
+        else {
+            String blob_id = getBlobid(added, filepath);
+            if(!tracked_blobid.equals(blobid)) {
+                //file name not changed, only content change,
+                    //then put in the `added`
+                add_put(filepath, blobid, dir_blob);
+            } else {
+                //nothing change, but we need to check if it is the third type situation
+                if (blob_id != null) {
+                    //correspond to the third type situation
+                    added.remove(filepath);
+                }
+                else {
+                    System.err.println("can not add unchanged file");
+
+                }
+            }
+        }
+    }
+
+    private void add_put(String filepath, String id, Blob blob) {
+        added.put(filepath, id);
         blob.save();
         is_modify_index = true;
     }
@@ -101,7 +148,11 @@ public class StagedArea implements Serializable{
         for(Map.Entry<String, String> entry : added.entrySet()) {
             tracked.put(entry.getKey(), entry.getValue());
         }
-
+        for(Map.Entry<String, String> entry : tracked.entrySet()) {
+            if(removed.contains(entry.getKey())) {
+                tracked.remove(entry.getKey());
+            }
+        }
         clear();
         return tracked;
     }
@@ -111,4 +162,16 @@ public class StagedArea implements Serializable{
         removed.clear();
     }
 
+    public void rm(File file) {
+        String filepath = file.getPath();
+        if (tracked.containsKey(filepath)) {
+            //removed from tracked and del from dir
+            removed.add(filepath);
+            file.delete();
+        }
+        else if (added.containsKey(filepath)) {
+            //removed from tracked
+            removed.add(filepath);
+        }
+    }
 }

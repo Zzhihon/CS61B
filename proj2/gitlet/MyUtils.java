@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Map;
 
 import static gitlet.Utils.*;
 
@@ -52,6 +53,19 @@ public class MyUtils {
             dir.mkdir();
         }
         writeObject(file, obj);
+    }
+
+    public static String getBlobid(Map<String, String> tracked, String filepath) {
+
+        String blob_shaid = null;
+
+        for(Map.Entry<String, String> entry : tracked.entrySet()) {
+            //下面这个判断这里必须要用equals，用==会报错！
+            if(entry.getKey().equals(filepath)) {
+                blob_shaid = entry.getValue();
+            }
+        }
+        return blob_shaid;
     }
 
 }

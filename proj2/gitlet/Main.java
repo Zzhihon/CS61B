@@ -1,6 +1,8 @@
 package gitlet;
 
 import java.io.File;
+import java.util.ResourceBundle;
+
 import static gitlet.MyUtils.exitWithError;
 import static gitlet.Utils.join;
 
@@ -38,13 +40,27 @@ public class Main {
                 break;
 
             case "checkout":
-                filename = args[2];
-                new Repository().checkout(filename);
+                switch (args.length) {
+                    case 3:
+                        filename = args[2];
+                        new Repository().checkout(filename);
+                        break;
+
+                    case 4:
+                        String commitid = args[1];
+                        filename = args[3];
+                        new Repository().checkout(commitid, filename);
+                        break;
+                }
                 break;
 
             case "log":
                 new Repository().log();
                 break;
+
+            case "rm" :
+                filename = args[1];
+                new Repository().rm(filename);
         }
     }
 }
