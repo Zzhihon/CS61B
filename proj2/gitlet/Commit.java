@@ -97,7 +97,7 @@ public class Commit implements Serializable{
      */
     public String getTimestamp() {
         // Thu Jan 1 00:00:00 1970 +0000
-        DateFormat dateFormat = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z", Locale.CHINESE);
+        DateFormat dateFormat = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z", Locale.ENGLISH);
         return dateFormat.format(date);
     }
 
