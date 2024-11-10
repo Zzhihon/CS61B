@@ -158,6 +158,11 @@ public class Commit implements Serializable, Dumpable{
     }
 
     public void dump() {
-        System.out.println(getLog() + tracked);
+        System.out.println(getLog());
+        for (Map.Entry<String, String> entry : tracked.entrySet()) {
+            String blobid = entry.getValue();
+            Blob blob = readObject(getobjFile(blobid), Blob.class);
+            blob.dump();
+        }
     }
 }
