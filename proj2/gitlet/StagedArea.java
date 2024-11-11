@@ -98,15 +98,20 @@ public class StagedArea implements Serializable{
         String blobid = dir_blob.getid(); //blobid is defined by it's path(filename) and content
         String tracked_blobid = getBlobid(tracked, filepath); //file in `tracked`
 
+
         if(tracked_blobid == null) {
             //a. file name changed, so the track not have to del the previous version of blob(use `removed`)
             //   so just put this blob in the `added`
-            //b. not exist this file
+            //b. not exist this file(no implet del)
             add_put(filepath, blobid, dir_blob);
         }
         else {
             String blob_id = getBlobid(added, filepath);
-            if(!tracked_blobid.equals(blobid)) {
+            if (removed.contains(filepath)) {
+                // not exist this file(after implet del)
+                removed.remove(filepath);
+                add_put(filepath, blobid, dir_blob);
+            }else if(!tracked_blobid.equals(blobid)) {
                 //file name not changed, only content change,
                     //then put in the `added`
                 add_put(filepath, blobid, dir_blob);
@@ -129,7 +134,6 @@ public class StagedArea implements Serializable{
     public void saveStageArea(File index) {
         writeObject(index, this);
     }
-
 
     /**
      * Process the core logic of commit
@@ -169,5 +173,9 @@ public class StagedArea implements Serializable{
             return removed.add(filePath);
         }
         return false;
+    }
+
+    public void removed(String path) {
+        removed.add(path);
     }
 }

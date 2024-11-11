@@ -62,6 +62,9 @@ public class Main {
                 filename = args[1];
                 new Repository().rm(filename);
                 break;
+
+            case "status":
+                new Repository().status();
         }
     }
 }

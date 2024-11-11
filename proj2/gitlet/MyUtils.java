@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 
 import static gitlet.Utils.*;
@@ -70,8 +73,13 @@ public class MyUtils {
     }
 
     public static void rm(File file) {
-        if (!file.delete()) {
-            throw new IllegalArgumentException(String.format("rm: %s: Failed to delete.", file.getPath()));
+        String filepath = file.getPath();
+        Path path = Paths.get(filepath);
+        try {
+            Files.delete(path);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
         }
     }
 

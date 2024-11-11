@@ -8,9 +8,7 @@ import java.io.Serializable;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static gitlet.MyUtils.*;
 import static gitlet.Utils.*;
@@ -105,7 +103,14 @@ public class Repository implements Serializable {
     private static final String DEFAULT_BRANCH = "master";
 
     //current branch
-    private final String current_branch = DEFAULT_BRANCH;
+    private String current_branch = DEFAULT_BRANCH;
+
+    /**
+     * currenFiles: include all the files under the CWD which are used to see what file is rm -rf
+     */
+    private final File[] currentFiles = CWD.listFiles(File::isFile);
+
+
 
     /**
      * to check if index has already store Stagearea object，if true readobject，else new one
@@ -171,6 +176,14 @@ public class Repository implements Serializable {
      * update commit obj's `tracked`
      */
     public void commit(String msg) {
+        Set<String> rm_rf = new HashSet<>();
+        rm_rf.addAll(rm_rf_tracked());
+        rm_rf.addAll(rm_rf_staged());
+        for (String filepath : rm_rf) {
+            stagearea.removed(filepath);
+        }
+
+
         Map<String, String> tracked = stagearea.commit();
         List<String> parentid = new ArrayList<>();
         if(HEAD.exists()) {
@@ -181,6 +194,43 @@ public class Repository implements Serializable {
         newcommit.savecommit();
         updateHead(newcommit);
         updateRefs(newcommit);
+    }
+
+    public Set<String> rm_rf_tracked() {
+        Map<String, String> tracked = stagearea.getTracked();
+        return get_rm_rf(tracked);
+    }
+
+    public Set<String> rm_rf_staged() {
+        Map<String, String> added = stagearea.getAdded();
+        return get_rm_rf(added);
+    }
+
+    public Set<String> get_rm_rf(Map<String, String> map) {
+        Set<String> rm_rf = new HashSet<>();
+        Map<String, String> currentMap = getcurrentMap(currentFiles);
+        for(Map.Entry<String, String> entry : map.entrySet()) {
+            if(!currentMap.containsKey(entry.getKey())) {
+                //find the file that is rm -rf
+                rm_rf.add(entry.getKey());
+            }
+            else {
+                //the rm-rf file is in removed, and then create the same one in dir(untracked)
+                //do nothing is fine
+            }
+        }
+        return rm_rf;
+    }
+
+}
+
+    public Map<String, String> getcurrentMap(File[] files) {
+        Map<String, String> currentMap = new HashMap<>();
+        for (File file : files) {
+            String shaid = sha1(file.getPath(), readContents(file));
+            currentMap.put(file.getPath(), shaid);
+        }
+        return currentMap;
     }
 
     public void updateHead(Serializable latestCommit) {
@@ -254,5 +304,56 @@ public class Repository implements Serializable {
         }else {
             exit("No reason to remove the file.");
         }
+    }
+
+    /**
+     * === Branches ===
+     * Displays what branches currently exist, and marks the current branch with a *.
+     * *master
+     * other-branch
+     *
+     * === Staged Files ===
+     * wug.txt
+     * wug2.txt
+     *
+     * === Removed Files ===
+     * goodbye.txt
+     *
+     *
+     * === Modifications Not Staged For Commit ===
+     * a.txt: Tracked in the current commit, changed in the working directory, but not staged; or
+     * b.txt: Staged for addition, but with different contents than in the working directory; or
+     * c.txt: Staged for addition, but deleted in the working directory; or
+     * d.txt: Not staged for removal, but tracked in the current commit and deleted from the working directory.
+     *
+     *          //when the file is delete in dir, then
+     *          1. remove it from added and put it in removed
+     *          2. put it in removed
+     *
+     * === Untracked Files ===
+     * for files present in the working directory
+     * but neither staged for addition nor tracked
+     * this includes files that have been staged for removal, but then re-created the same name one
+     */
+
+
+    public void status() {
+        StringBuilder statusbuilder = new StringBuilder();
+        Map<String, String> added = stagearea.getAdded();
+        Map<String, String> tracked = stagearea.getTracked();
+
+
+        // branched
+
+        //staged files, those who in the added and is gona to put in tracked
+
+
+
+        //removed files, those who in the removed and is gona to del from tracked
+
+        //modify no staged
+
+        //untracked files
+
     }
 }
