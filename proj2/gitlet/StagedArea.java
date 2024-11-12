@@ -97,10 +97,20 @@ public class StagedArea implements Serializable{
      * Tips: only the file differ from the one in commit can be added into stagearea
      */
     public void add(File file) {
+        is_modify_index = false;
         String filepath = file.getPath(); // in user's directory
+
+        if (!file.exists()) {
+            removed.add(filepath);
+            is_modify_index = true;
+            return;
+        }
+
         Blob dir_blob = new Blob(file); //file in user's directory
         String blobid = dir_blob.getid(); //blobid is defined by it's path(filename) and content
         String tracked_blobid = getBlobid(tracked, filepath); //file in `tracked`
+
+
 
 
         if(tracked_blobid == null) {
@@ -179,7 +189,5 @@ public class StagedArea implements Serializable{
         return false;
     }
 
-    public void removed(String path) {
-        removed.add(path);
-    }
+
 }

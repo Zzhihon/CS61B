@@ -181,8 +181,6 @@ public class Repository implements Serializable {
      */
     public void commit(String msg) {
 
-        update_removed();
-
         Map<String, String> tracked = stagearea.commit();
         List<String> parentid = new ArrayList<>();
         if (HEAD.exists()) {
@@ -191,54 +189,42 @@ public class Repository implements Serializable {
         }
         Commit newcommit = new Commit(msg, tracked, parentid);
         newcommit.savecommit();
+        stagearea.saveStageArea(INDEX);
         updateHead(newcommit);
         updateRefs(newcommit);
     }
 
-    public void update_removed() {
+    public Set<String> get_all_rm_rf() {
         Set<String> rm_rf = new HashSet<>();
         rm_rf.addAll(rm_rf_staged());
-        for ( String filepath : rm_rf) {
-            stagearea.getAdded().remove(filepath);
-        }
         rm_rf.addAll(rm_rf_tracked());
-        for (String filepath : rm_rf) {
-            stagearea.removed(filepath);
-        }
+        return rm_rf;
     }
 
     public Set<String> rm_rf_tracked() {
         Map<String, String> tracked = stagearea.getTracked();
-        return get_rm_rf(tracked);
+        Map<String, String> currentMap = getcurrentMap();
+        return get_rm_rf(tracked, currentMap);
     }
 
     public Set<String> rm_rf_staged() {
         Map<String, String> added = stagearea.getAdded();
-        return get_rm_rf(added);
+        Map<String, String> currentMap = getcurrentMap();
+        return get_rm_rf(added, currentMap);
     }
 
-    public Set<String> get_rm_rf(Map<String, String> map) {
-        Set<String> rm_rf = new HashSet<>();
-        Map<String, String> currentMap = getcurrentMap();
-        for (Map.Entry<String, String> entry : map.entrySet()) {
-            if (!currentMap.containsKey(entry.getKey())) {
-                //find the file that is rm -rf
-                rm_rf.add(entry.getKey());
-            } else {
-                //the rm-rf file is in removed, and then create the same one in dir(untracked)
-                //do nothing is fine
-            }
-        }
-        return rm_rf;
-    }
+
 
 
     public Map<String, String> getcurrentMap() {
         Map<String, String> currentMap = new HashMap<>();
+        Set<String> default_files = new HashSet<>();
+        default_files.add(getFilefromCWD("Makefile").getPath());
+        default_files.add(getFilefromCWD("pom.xml").getPath());
+        default_files.add(getFilefromCWD("proj2.iml").getPath());
+
         for (File file : currentFiles) {
-            if (file.getName() == "Makefile" || file.getName() == "pom.xml" || file.getName() == "prj2.iml") {
-                continue;
-            }
+            if (default_files.contains(file.getPath())) { continue; }
             String shaid = sha1(file.getPath(), readContents(file));
             currentMap.put(file.getPath(), shaid);
         }
@@ -331,7 +317,10 @@ public class Repository implements Serializable {
      * === Removed Files ===
      * goodbye.txt
      *
+     *  tips: when delete from directory, the file won't put in removed.
+     *        only then when imple add will put this file in removed
      *
+     *        and if you don't imple add, the commit will still keep the file in tracked
      *
      * === Untracked Files ===
      * for files present in the working directory
@@ -343,7 +332,6 @@ public class Repository implements Serializable {
     public void status() {
 
         StringBuilder statusbuilder = new StringBuilder();
-        update_removed();
 
         // branched
         StringBuilder branches = new StringBuilder();
@@ -397,6 +385,9 @@ public class Repository implements Serializable {
          */
         StringBuilder unstaged = new StringBuilder();
         StringBuilder untracked = new StringBuilder();
+        Set<String> rm_rf = get_all_rm_rf();
+        TreeSet<String> unstaged_sorted = new TreeSet<>();
+        TreeSet<String> untracked_sorted = new TreeSet<>();
         Map<String, String> currentFileMap = getcurrentMap();
         Map<String, String> tracked = stagearea.getTracked();
 
@@ -410,25 +401,37 @@ public class Repository implements Serializable {
             String filename = cur_file.getName();
             if (tracked.get(filepath) == null) {
                 if (added.get(filepath) == null) {
-                    untracked.append(filename).append("\n");
+                    untracked_sorted.add(filename);
                 } else {
                     String added_blobid = getBlobid(added, filepath);
-                    if (cur_blobid != added_blobid ) {
-                        unstaged.append(filename).append("\n");
+                    if (!cur_blobid.equals(added_blobid)) {
+                        unstaged_sorted.add(filename);
                     }
                 }
             }else {
-                if (cur_blobid == getBlobid(tracked, filepath)) {
-                    unstaged.append(filename).append("\n");
+                if (!cur_blobid.equals(getBlobid(tracked, filepath))) {
+                    unstaged_sorted.add(filename);
                 }
             }
+        }
+        for (String filepath : rm_rf) {
+            File file = new File(filepath);
+            String filename = file.getName();
+            if(removed.contains(filepath)) { continue; }
+            unstaged_sorted.add(filename);
+        }
+
+        for (String filename : unstaged_sorted) {
+            unstaged.append(filename).append("\n");
+        }
+
+        for (String filename : untracked_sorted) {
+            untracked.append(filename).append("\n");
         }
         statusbuilder.append(unstaged).append("\n");
         statusbuilder.append(untracked).append("\n");
 
-        System.out.println(statusbuilder);
+        System.out.print(statusbuilder);
         //untracked files
     }
-
-
 }

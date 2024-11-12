@@ -35,7 +35,6 @@ public class Blob implements Serializable, Dumpable {
         blobid = sha1(path, content);
         objfile = getobjFile(blobid);
 
-
     }
     public String getFilepath() {
         return filepath;

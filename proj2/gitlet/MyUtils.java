@@ -7,7 +7,9 @@ import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import static gitlet.Utils.*;
 
@@ -82,5 +84,21 @@ public class MyUtils {
             e.printStackTrace();
         }
     }
+
+    public static Set<String> get_rm_rf(Map<String, String> map, Map<String, String> currentMap) {
+        Set<String> rm_rf = new HashSet<>();
+
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            if (currentMap.get(entry.getKey()) == null) {
+                //find the file that is rm -rf
+                rm_rf.add(entry.getKey());
+            } else {
+                //the rm-rf file is in removed, and then create the same one in dir(untracked)
+                //do nothing is fine
+            }
+        }
+        return rm_rf;
+    }
+
 
 }
