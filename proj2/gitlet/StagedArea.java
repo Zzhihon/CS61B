@@ -77,6 +77,10 @@ public class StagedArea implements Serializable{
         return is_modify_index;
     }
 
+    public Set<String> getRemoved() {
+        return removed;
+    }
+
     public void saveIndex(File file, StagedArea stagearea) {
         writeObject(file, (Serializable) stagearea);
     }

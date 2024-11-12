@@ -1,8 +1,8 @@
 # Two uses of the `story` command
-> story "Hello"
-Hello
+> story "capers.Hello"
+capers.Hello
 <<<
 > story "World"
-Hello
+capers.Hello
 World
 <<<

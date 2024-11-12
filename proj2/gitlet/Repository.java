@@ -1,7 +1,7 @@
 package gitlet;
 import static gitlet.MyUtils.createDir;
 
-import com.sun.java.accessibility.util.GUIInitializedListener;
+
 
 import java.io.File;
 import java.io.Serializable;
@@ -53,9 +53,13 @@ public class Repository implements Serializable {
      * variable is used. We've provided two examples for you.
      */
 
-    /** The current working directory. */
+    /**
+     * The current working directory.
+     */
     private static final File CWD = new File(System.getProperty("user.dir"));
-    /** The .gitlet directory. */
+    /**
+     * The .gitlet directory.
+     */
     private static final File GITLET_DIR = join(CWD, ".gitlet");
 
     /**
@@ -65,7 +69,7 @@ public class Repository implements Serializable {
      * Take hashid minus the first two digits as the file name
      * The file stores serialized objects, which are strings
      */
-    public static final File OBJECTS_DIR = join(GITLET_DIR,"objects");
+    public static final File OBJECTS_DIR = join(GITLET_DIR, "objects");
 
     /**
      * .gitlet/index
@@ -111,23 +115,23 @@ public class Repository implements Serializable {
     private final File[] currentFiles = CWD.listFiles(File::isFile);
 
 
-
     /**
      * to check if index has already store Stagearea object，if true readobject，else new one
      */
     private final StagedArea stagearea = INDEX.exists() ? readObject(INDEX, StagedArea.class) : new StagedArea();
 
     /* TODO: fill in the rest of this class. */
+
     /**
      * when receive init
      * call this function:
-     *   initial .gitlet directory
-     *      create subdirectories commits, blobs, refs to store data
-     *
-     *
-     *   set up a master branch
-     *   set master as current branch
-     /**
+     * initial .gitlet directory
+     * create subdirectories commits, blobs, refs to store data
+     * <p>
+     * <p>
+     * set up a master branch
+     * set master as current branch
+     * /**
      * Initialize a repository at the current working directory.
      *
      * <pre>
@@ -163,7 +167,7 @@ public class Repository implements Serializable {
         File file = getFilefromCWD(filename);
         stagearea.add(file);
         boolean flag = stagearea.get_is_modify_index();
-        if(flag) stagearea.saveStageArea(INDEX);
+        if (flag) stagearea.saveStageArea(INDEX);
     }
 
     private File getFilefromCWD(String filename) {
@@ -176,17 +180,12 @@ public class Repository implements Serializable {
      * update commit obj's `tracked`
      */
     public void commit(String msg) {
-        Set<String> rm_rf = new HashSet<>();
-        rm_rf.addAll(rm_rf_tracked());
-        rm_rf.addAll(rm_rf_staged());
-        for (String filepath : rm_rf) {
-            stagearea.removed(filepath);
-        }
 
+        update_removed();
 
         Map<String, String> tracked = stagearea.commit();
         List<String> parentid = new ArrayList<>();
-        if(HEAD.exists()) {
+        if (HEAD.exists()) {
             Commit commit = readObject(HEAD, Commit.class);
             parentid.add(commit.CommitID());
         }
@@ -194,6 +193,18 @@ public class Repository implements Serializable {
         newcommit.savecommit();
         updateHead(newcommit);
         updateRefs(newcommit);
+    }
+
+    public void update_removed() {
+        Set<String> rm_rf = new HashSet<>();
+        rm_rf.addAll(rm_rf_staged());
+        for ( String filepath : rm_rf) {
+            stagearea.getAdded().remove(filepath);
+        }
+        rm_rf.addAll(rm_rf_tracked());
+        for (String filepath : rm_rf) {
+            stagearea.removed(filepath);
+        }
     }
 
     public Set<String> rm_rf_tracked() {
@@ -208,13 +219,12 @@ public class Repository implements Serializable {
 
     public Set<String> get_rm_rf(Map<String, String> map) {
         Set<String> rm_rf = new HashSet<>();
-        Map<String, String> currentMap = getcurrentMap(currentFiles);
-        for(Map.Entry<String, String> entry : map.entrySet()) {
-            if(!currentMap.containsKey(entry.getKey())) {
+        Map<String, String> currentMap = getcurrentMap();
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            if (!currentMap.containsKey(entry.getKey())) {
                 //find the file that is rm -rf
                 rm_rf.add(entry.getKey());
-            }
-            else {
+            } else {
                 //the rm-rf file is in removed, and then create the same one in dir(untracked)
                 //do nothing is fine
             }
@@ -222,11 +232,13 @@ public class Repository implements Serializable {
         return rm_rf;
     }
 
-}
 
-    public Map<String, String> getcurrentMap(File[] files) {
+    public Map<String, String> getcurrentMap() {
         Map<String, String> currentMap = new HashMap<>();
-        for (File file : files) {
+        for (File file : currentFiles) {
+            if (file.getName() == "Makefile" || file.getName() == "pom.xml" || file.getName() == "prj2.iml") {
+                continue;
+            }
             String shaid = sha1(file.getPath(), readContents(file));
             currentMap.put(file.getPath(), shaid);
         }
@@ -240,7 +252,7 @@ public class Repository implements Serializable {
 
     public void updateRefs(Serializable latestCommit) {
         File head = join(REFS_DIR, current_branch);
-        writeObject(head,latestCommit);
+        writeObject(head, latestCommit);
     }
 
     /**
@@ -320,15 +332,6 @@ public class Repository implements Serializable {
      * goodbye.txt
      *
      *
-     * === Modifications Not Staged For Commit ===
-     * a.txt: Tracked in the current commit, changed in the working directory, but not staged; or
-     * b.txt: Staged for addition, but with different contents than in the working directory; or
-     * c.txt: Staged for addition, but deleted in the working directory; or
-     * d.txt: Not staged for removal, but tracked in the current commit and deleted from the working directory.
-     *
-     *          //when the file is delete in dir, then
-     *          1. remove it from added and put it in removed
-     *          2. put it in removed
      *
      * === Untracked Files ===
      * for files present in the working directory
@@ -338,22 +341,94 @@ public class Repository implements Serializable {
 
 
     public void status() {
-        StringBuilder statusbuilder = new StringBuilder();
-        Map<String, String> added = stagearea.getAdded();
-        Map<String, String> tracked = stagearea.getTracked();
 
+        StringBuilder statusbuilder = new StringBuilder();
+        update_removed();
 
         // branched
+        StringBuilder branches = new StringBuilder();
+        branches.append("=== Branches ===").append("\n");
+        branches.append(current_branch).append("\n");
+
+        statusbuilder.append(branches).append("\n");
 
         //staged files, those who in the added and is gona to put in tracked
-
-
+        StringBuilder status_added = new StringBuilder();
+        TreeSet<String> added_sort = new TreeSet<>();
+        Map<String, String> added = stagearea.getAdded();
+        status_added.append("=== Staged Files ===").append("\n");
+        for ( String key : added.keySet()) {
+            File file = new File(key);
+            String filename =file.getName();
+            added_sort.add(filename);
+        }
+        for (String filename : added_sort) {
+            status_added.append(filename).append("\n");
+        }
+        statusbuilder.append(status_added).append("\n");
 
         //removed files, those who in the removed and is gona to del from tracked
+        StringBuilder status_removed = new StringBuilder();
+        Set<String> removed = stagearea.getRemoved();
+        HashSet<String> removed_sort = new HashSet<>();
+        statusbuilder.append("=== Removed Files ===").append("\n");
+        for ( String path : removed) {
+            File file = new File(path);
+            String filename = file.getName();
+            removed_sort.add(filename);
+        }
+        for (String filename : removed_sort) {
+            status_removed.append(filename).append("\n");
+        }
+        statusbuilder.append(status_removed).append("\n");
 
         //modify no staged
+        /**
+         *
+         * === Modifications Not Staged For Commit ===
+         * a.txt: Tracked in the current commit, changed in the working directory, but not staged; or
+         * b.txt: Staged for addition, but with different contents than in the working directory; or
+         * c.txt: Staged for addition, but deleted in the working directory; or
+         * d.txt: Not staged for removal, but tracked in the current commit and deleted from the working directory.
+         *
+         *          //when the file is delete in dir, then
+         *          1. remove it from added and put it in removed
+         *          2. put it in removed
+         */
+        StringBuilder unstaged = new StringBuilder();
+        StringBuilder untracked = new StringBuilder();
+        Map<String, String> currentFileMap = getcurrentMap();
+        Map<String, String> tracked = stagearea.getTracked();
 
+        unstaged.append("=== Modifications Not Staged For Commit ===").append("\n");
+        untracked.append("=== Untracked Files ===").append("\n");
+
+        for (Map.Entry<String, String> entry : currentFileMap.entrySet()) {
+            String filepath = entry.getKey();
+            String cur_blobid = entry.getValue();
+            File cur_file = new File(filepath);
+            String filename = cur_file.getName();
+            if (tracked.get(filepath) == null) {
+                if (added.get(filepath) == null) {
+                    untracked.append(filename).append("\n");
+                } else {
+                    String added_blobid = getBlobid(added, filepath);
+                    if (cur_blobid != added_blobid ) {
+                        unstaged.append(filename).append("\n");
+                    }
+                }
+            }else {
+                if (cur_blobid == getBlobid(tracked, filepath)) {
+                    unstaged.append(filename).append("\n");
+                }
+            }
+        }
+        statusbuilder.append(unstaged).append("\n");
+        statusbuilder.append(untracked).append("\n");
+
+        System.out.println(statusbuilder);
         //untracked files
-
     }
+
+
 }

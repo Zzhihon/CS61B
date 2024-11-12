@@ -58,11 +58,11 @@ public class MyUtils {
         writeObject(file, obj);
     }
 
-    public static String getBlobid(Map<String, String> tracked, String filepath) {
+    public static String getBlobid(Map<String, String> map, String filepath) {
 
         String blob_shaid = null;
 
-        for(Map.Entry<String, String> entry : tracked.entrySet()) {
+        for(Map.Entry<String, String> entry : map.entrySet()) {
             //下面这个判断这里必须要用equals，用==会报错！
             if(entry.getKey().equals(filepath)) {
                 blob_shaid = entry.getValue();

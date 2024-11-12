@@ -5,8 +5,6 @@ package gitlet;
 import javax.xml.crypto.Data;
 import java.io.File;
 import java.io.Serializable;
-import java.nio.charset.StandardCharsets;
-import java.security.SecureRandomParameters;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
