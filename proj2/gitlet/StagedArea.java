@@ -101,6 +101,7 @@ public class StagedArea implements Serializable{
         String filepath = file.getPath(); // in user's directory
 
         if (!file.exists()) {
+            added.remove(filepath);
             removed.add(filepath);
             is_modify_index = true;
             return;

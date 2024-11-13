@@ -3,6 +3,7 @@ package gitlet;
 import java.io.File;
 import java.util.ResourceBundle;
 
+import static gitlet.MyUtils.exit;
 import static gitlet.MyUtils.exitWithError;
 import static gitlet.Utils.join;
 
@@ -35,6 +36,7 @@ public class Main {
                 break;
 
             case "commit":
+                if (args.length == 1) {exit("Please enter a commit message.");}
                 String msg = args[1];
                 new Repository().commit(msg);
                 break;
@@ -50,7 +52,7 @@ public class Main {
                     case 4:
                         String commitid = args[1];
                         filename = args[3];
-                        new Repository().checkout(commitid, filename);
+                        new Repository().checkout(commitid, filename, "args4");
                         break;
 
                     case 2:

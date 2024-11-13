@@ -148,6 +148,7 @@ public class Repository implements Serializable {
      * </pre>
      */
     public static void init() {
+        if (GITLET_DIR.exists()) { exit("A Gitlet version-control system already exists in the current directory.");}
         createDir(GITLET_DIR);
         createDir(OBJECTS_DIR);
         createDir(REFS_DIR);
@@ -176,6 +177,7 @@ public class Repository implements Serializable {
      */
     public void add(String filename) {
         File file = getFilefromCWD(filename);
+        if (!file.exists()) {exit("File does not exist.");}
         stagearea.add(file);
         boolean flag = stagearea.get_is_modify_index();
         if (flag) stagearea.saveStageArea(INDEX);
@@ -191,7 +193,7 @@ public class Repository implements Serializable {
      * update commit obj's `tracked`
      */
     public void commit(String msg) {
-
+        if(stagearea.getAdded().isEmpty() && stagearea.getRemoved().isEmpty()) {exit("No changes added to the commit.");}
         Map<String, String> tracked = stagearea.commit();
         List<String> parentid = new ArrayList<>();
         if (HEAD.exists()) {
@@ -235,8 +237,18 @@ public class Repository implements Serializable {
      */
     public void checkout(String filename) {
         Commit headcommit = getHeadCommit();
-        checkout(headcommit.getCommitID(),filename);
+        checkout(headcommit.getCommitID(), filename, "args3");
     }
+
+    /**
+     * If a working file is untracked in the current branch and would be overwritten by the checkout,
+     * print "There is an untracked file in the way; delete it, or add and commit it first". and exit
+     *
+     * when the file untracked in the current branch, when the check-branch has the same name one and
+     * this file is tracked. It will error that.
+     *
+     * @param branchname
+     */
 
     public void checkoutbranch(String branchname) {
         if (!is_branch_exist(branchname)) {exit("No such branch exists");}
@@ -275,17 +287,19 @@ public class Repository implements Serializable {
         return branchname;
     }
 
-    public void checkout(String commitid, String filename) {
+    public void checkout(String commitid, String filename, String code) {
         File file = getFilefromCWD(filename);
         String filePath = getFilefromCWD(filename).getPath();
         Commit commit_tar = readObject(getobjFile(commitid), Commit.class);
-        String content = getBlobcontent(commit_tar, filePath);
+        String content = getBlobcontent(commit_tar, filePath, code);
         writeContents(file, content);
     }
 
 
-    private String getBlobcontent(Commit commit, String filepath) {
+    private String getBlobcontent(Commit commit, String filepath, String code) {
         String blob_shaid = getBlobid(commit.tracked(), filepath);
+        if (blob_shaid == null && code.equals("args4")) { exit("No commit with that id exists.");}
+        else if (blob_shaid == null && code.equals("args3")) { exit("File does not exist in that commit.");}
         String dir_name = blob_shaid.substring(0,2);
         String sur_name = blob_shaid.substring(2);
         File target = join(OBJECTS_DIR,dir_name,sur_name);
@@ -390,9 +404,18 @@ public class Repository implements Serializable {
 
         // branched
         StringBuilder branches = new StringBuilder();
+        TreeSet<String> allBranches = new TreeSet<>();
         branches.append("=== Branches ===").append("\n");
-        branches.append(current_branch).append("\n");
+        for (File file : AllBranchedFiles) {
+            String filename = file.getName();
+            allBranches.add(filename);
+        }
 
+        for (String branch : allBranches) {
+            if (branch.equals(current_branch)) {
+                branches.append("*" + current_branch).append("\n");
+            }else {branches.append(branch).append("\n");}
+        }
         statusbuilder.append(branches).append("\n");
 
         //staged files, those who in the added and is gona to put in tracked
