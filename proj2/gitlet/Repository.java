@@ -220,7 +220,6 @@ public class Repository implements Serializable {
 
     private static Commit getHeadCommit() {
         String path = ToString(readContents(HEAD)).substring(4);
-        writeContents(join(CWD,"test"), path);
         File file = new File(path);
         String commitID =  ToString(readContents(file));
         return readObject(getobjFile(commitID), Commit.class);
