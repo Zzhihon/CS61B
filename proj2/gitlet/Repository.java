@@ -193,7 +193,8 @@ public class Repository implements Serializable {
      * update commit obj's `tracked`
      */
     public void commit(String msg) {
-        if(stagearea.getAdded().isEmpty() && stagearea.getRemoved().isEmpty()) {exit("No changes added to the commit.");}
+        if (msg.equals("")) {exit("Please enter a commit message.");}
+        if (stagearea.getAdded().isEmpty() && stagearea.getRemoved().isEmpty()) {exit("No changes added to the commit.");}
         Map<String, String> tracked = stagearea.commit();
         List<String> parentid = new ArrayList<>();
         if (HEAD.exists()) {
@@ -252,6 +253,7 @@ public class Repository implements Serializable {
     public void checkoutbranch(String branchname) {
         if (!is_branch_exist(branchname)) {exit("No such branch exists");}
         if (current_branch == branchname) {exit("No need to checkout the current branch.");}
+
         //if (untracked_is_overwrite()) {exit( "There is an untracked file in the way; delete it, or add and commit it first.");}
         File branch = join(HEADS_DIR, branchname);
         String path = branch.getPath();
