@@ -100,12 +100,14 @@ public class StagedArea implements Serializable{
         is_modify_index = false;
         String filepath = file.getPath(); // in user's directory
 
-        if (!file.exists()) {
+        // rm file which is in tracked, then add will delete it
+        if (removed.contains(filepath) || !file.exists()) {
             added.remove(filepath);
-            removed.add(filepath);
+            removed.remove(filepath);
             is_modify_index = true;
             return;
         }
+
 
         Blob dir_blob = new Blob(file); //file in user's directory
         String blobid = dir_blob.getid(); //blobid is defined by it's path(filename) and content
