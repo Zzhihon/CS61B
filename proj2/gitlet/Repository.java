@@ -6,6 +6,7 @@ import static gitlet.MyUtils.createDir;
 import java.io.File;
 import java.io.Serializable;
 
+import java.io.StringReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -107,13 +108,17 @@ public class Repository implements Serializable {
     private static final String DEFAULT_BRANCH = "master";
 
     //current branch
-    private String current_branch = DEFAULT_BRANCH;
+    private String current_branch = (HEAD.exists()) ? getCurrentBranch() : "master";
 
     /**
      * currenFiles: include all the files under the CWD which are used to see what file is rm -rf
      */
     private final File[] currentFiles = CWD.listFiles(File::isFile);
 
+    /**
+     * get all branch
+     */
+    private final File[] AllBranchedFiles = HEADS_DIR.listFiles(File::isFile);
 
     /**
      * to check if index has already store Stagearea object，if true readobject，else new one
@@ -146,15 +151,21 @@ public class Repository implements Serializable {
         createDir(GITLET_DIR);
         createDir(OBJECTS_DIR);
         createDir(REFS_DIR);
+        createDir(HEADS_DIR);
 
         Commit inital_commit = new Commit();
-        writeObject(HEAD, inital_commit);
+
         inital_commit.savecommit();
+
+        File file = join(HEADS_DIR, "master");
+        String filepath = file.getPath();
+        writeContents(file, inital_commit.getCommitID());
+        writeContents(HEAD, "ref " + filepath);
+
         /**
          * this initialise master to refs/HEADS/
          * file named master which store the latest CommitID
          */
-        File head = join(HEADS_DIR, DEFAULT_BRANCH);
 
         //writeObject(head, (Serializable) inital_commit);
 
@@ -184,36 +195,103 @@ public class Repository implements Serializable {
         Map<String, String> tracked = stagearea.commit();
         List<String> parentid = new ArrayList<>();
         if (HEAD.exists()) {
-            Commit commit = readObject(HEAD, Commit.class);
-            parentid.add(commit.CommitID());
+            Commit commit = getHeadCommit();
+            parentid.add(commit.getCommitID());
         }
         Commit newcommit = new Commit(msg, tracked, parentid);
         newcommit.savecommit();
         stagearea.saveStageArea(INDEX);
-        updateHead(newcommit);
-        updateRefs(newcommit);
+        updateHEAD();
+        updateHEADS(newcommit);
     }
 
-    public Set<String> get_all_rm_rf() {
-        Set<String> rm_rf = new HashSet<>();
-        rm_rf.addAll(rm_rf_staged());
-        rm_rf.addAll(rm_rf_tracked());
-        return rm_rf;
+    public void updateHEAD() {
+        File file = join(HEADS_DIR, current_branch);
+        String filepath = file.getPath();
+        writeContents(HEAD, "ref " + filepath);
     }
 
-    public Set<String> rm_rf_tracked() {
-        Map<String, String> tracked = stagearea.getTracked();
-        Map<String, String> currentMap = getcurrentMap();
-        return get_rm_rf(tracked, currentMap);
+    public void updateHEADS(Commit latestCommit) {
+        File branch = join(HEADS_DIR, current_branch);
+        writeContents(branch, latestCommit.getCommitID());
     }
 
-    public Set<String> rm_rf_staged() {
-        Map<String, String> added = stagearea.getAdded();
-        Map<String, String> currentMap = getcurrentMap();
-        return get_rm_rf(added, currentMap);
+    private static Commit getHeadCommit() {
+        String path = ToString(readContents(HEAD)).substring(4);
+        writeContents(join(CWD,"test"), path);
+        File file = new File(path);
+        String commitID =  ToString(readContents(file));
+        return readObject(getobjFile(commitID), Commit.class);
+    }
+
+    /**
+     * checkout -- [filename]
+     * Takes the version of the file as it exists in the head commit and
+     *     puts it in the working directory
+     * then overwrite or create the file
+     *
+     * checkout [branchname]
+     *      
+     */
+    public void checkout(String filename) {
+        Commit headcommit = getHeadCommit();
+        checkout(headcommit.getCommitID(),filename);
+    }
+
+    public void checkoutbranch(String branchname) {
+        if (!is_branch_exist(branchname)) {exit("No such branch exists");}
+        if (current_branch == branchname) {exit("No need to checkout the current branch.");}
+        //if (untracked_is_overwrite()) {exit( "There is an untracked file in the way; delete it, or add and commit it first.");}
+        File branch = join(HEADS_DIR, branchname);
+        String path = branch.getPath();
+        writeContents(HEAD, "ref " + path);
+        current_branch = branchname;
+    }
+
+    public boolean untracked_is_overwrite() {
+
+        return false;
+    }
+
+    public boolean is_branch_exist(String branchname) {
+
+        for (File file : AllBranchedFiles) {
+            String filename = file.getName();
+            if (filename.equals(branchname)) {return true;}
+        }
+        return false;
+    }
+
+    public static void setbranch(String branchname) {
+        File branch = join(HEADS_DIR, branchname);
+        String commitid = getHeadCommit().getCommitID();
+        writeContents(branch, commitid);
+    }
+
+    private String getCurrentBranch() {
+        String path = ToString(readContents(HEAD)).substring(4);
+        File file = new File(path);
+        String branchname = file.getName();
+        return branchname;
+    }
+
+    public void checkout(String commitid, String filename) {
+        File file = getFilefromCWD(filename);
+        String filePath = getFilefromCWD(filename).getPath();
+        Commit commit_tar = readObject(getobjFile(commitid), Commit.class);
+        String content = getBlobcontent(commit_tar, filePath);
+        writeContents(file, content);
     }
 
 
+    private String getBlobcontent(Commit commit, String filepath) {
+        String blob_shaid = getBlobid(commit.tracked(), filepath);
+        String dir_name = blob_shaid.substring(0,2);
+        String sur_name = blob_shaid.substring(2);
+        File target = join(OBJECTS_DIR,dir_name,sur_name);
+        Blob tar_blob = readObject(target, Blob.class);
+        return tar_blob.getContent();
+    }
 
 
     public Map<String, String> getcurrentMap() {
@@ -230,49 +308,6 @@ public class Repository implements Serializable {
         }
         return currentMap;
     }
-
-    public void updateHead(Serializable latestCommit) {
-
-        writeObject(HEAD, latestCommit);
-    }
-
-    public void updateRefs(Serializable latestCommit) {
-        File head = join(REFS_DIR, current_branch);
-        writeObject(head, latestCommit);
-    }
-
-    /**
-     * checkout -- [filename]
-     * Takes the version of the file as it exists in the head commit and
-     *     puts it in the working directory
-     * then overwrite or create the file
-     */
-    public void checkout(String filename) {
-        Commit headcommit = getHeadCommit();
-        checkout(headcommit.CommitID(),filename);
-    }
-
-    public void checkout(String commitid, String filename) {
-        File file = getFilefromCWD(filename);
-        String filePath = getFilefromCWD(filename).getPath();
-        Commit commit_tar = readObject(getobjFile(commitid), Commit.class);
-        String content = getBlobcontent(commit_tar, filePath);
-        writeContents(file, content);
-    }
-
-    private static Commit getHeadCommit() {
-        return readObject(HEAD, Commit.class);
-    }
-
-    private String getBlobcontent(Commit commit, String filepath) {
-        String blob_shaid = getBlobid(commit.tracked(), filepath);
-        String dir_name = blob_shaid.substring(0,2);
-        String sur_name = blob_shaid.substring(2);
-        File target = join(OBJECTS_DIR,dir_name,sur_name);
-        Blob tar_blob = readObject(target, Blob.class);
-        return tar_blob.getContent();
-    }
-
 
 
     public void log() {
@@ -302,6 +337,26 @@ public class Repository implements Serializable {
         }else {
             exit("No reason to remove the file.");
         }
+    }
+
+
+    public Set<String> get_all_rm_rf() {
+        Set<String> rm_rf = new HashSet<>();
+        rm_rf.addAll(rm_rf_staged());
+        rm_rf.addAll(rm_rf_tracked());
+        return rm_rf;
+    }
+
+    public Set<String> rm_rf_tracked() {
+        Map<String, String> tracked = stagearea.getTracked();
+        Map<String, String> currentMap = getcurrentMap();
+        return get_rm_rf(tracked, currentMap);
+    }
+
+    public Set<String> rm_rf_staged() {
+        Map<String, String> added = stagearea.getAdded();
+        Map<String, String> currentMap = getcurrentMap();
+        return get_rm_rf(added, currentMap);
     }
 
     /**
@@ -385,11 +440,11 @@ public class Repository implements Serializable {
          */
         StringBuilder unstaged = new StringBuilder();
         StringBuilder untracked = new StringBuilder();
-        Set<String> rm_rf = get_all_rm_rf();
-        TreeSet<String> unstaged_sorted = new TreeSet<>();
-        TreeSet<String> untracked_sorted = new TreeSet<>();
         Map<String, String> currentFileMap = getcurrentMap();
         Map<String, String> tracked = stagearea.getTracked();
+        TreeSet<String> unstaged_sorted = new TreeSet<>();
+        TreeSet<String> untracked_sorted = new TreeSet<>();
+
 
         unstaged.append("=== Modifications Not Staged For Commit ===").append("\n");
         untracked.append("=== Untracked Files ===").append("\n");
@@ -414,10 +469,11 @@ public class Repository implements Serializable {
                 }
             }
         }
-        for (String filepath : rm_rf) {
+        for (String filepath : get_all_rm_rf()) {
             File file = new File(filepath);
             String filename = file.getName();
             if(removed.contains(filepath)) { continue; }
+
             unstaged_sorted.add(filename);
         }
 
@@ -435,3 +491,4 @@ public class Repository implements Serializable {
         //untracked files
     }
 }
+

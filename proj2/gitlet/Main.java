@@ -40,6 +40,7 @@ public class Main {
                 break;
 
             case "checkout":
+                String branchname;
                 switch (args.length) {
                     case 3:
                         filename = args[2];
@@ -51,6 +52,11 @@ public class Main {
                         filename = args[3];
                         new Repository().checkout(commitid, filename);
                         break;
+
+                    case 2:
+                        branchname = args[1];
+                        new Repository().checkoutbranch(branchname);
+                        break;
                 }
                 break;
 
@@ -58,13 +64,19 @@ public class Main {
                 new Repository().log();
                 break;
 
-            case "rm" :
+            case "rm":
                 filename = args[1];
                 new Repository().rm(filename);
                 break;
 
             case "status":
                 new Repository().status();
+                break;
+
+            case "branch":
+                branchname = args[1];
+                new Repository().setbranch(branchname);
+                break;
         }
     }
 }

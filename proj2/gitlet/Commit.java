@@ -104,7 +104,7 @@ public class Commit implements Serializable, Dumpable{
         return parentID;
     }
 
-    public String CommitID() {
+    public String getCommitID() {
         return CommitID;
     }
 

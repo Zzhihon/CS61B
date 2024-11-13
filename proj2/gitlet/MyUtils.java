@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -24,7 +25,9 @@ public class MyUtils {
         }
     }
 
-
+    public static String ToString(byte[] byteslist) {
+        return new String(byteslist, StandardCharsets.UTF_8);
+    }
 
     public static void exit(String msg, Object... args) {
         message(msg,args);
