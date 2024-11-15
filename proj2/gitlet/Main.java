@@ -45,14 +45,18 @@ public class Main {
                 String branchname;
                 switch (args.length) {
                     case 3:
+                        String operand = args[1];
+                        if (!operand.equals("--")) {exit("Incorrect operands.");}
                         filename = args[2];
                         new Repository().checkout(filename);
                         break;
 
                     case 4:
+                        operand = args[2];
+                        if (!operand.equals("--")) {exit("Incorrect operands.");}
                         String commitid = args[1];
                         filename = args[3];
-                        new Repository().checkout(commitid, filename, "args4");
+                        new Repository().checkout(commitid, filename);
                         break;
 
                     case 2:
@@ -78,6 +82,11 @@ public class Main {
             case "branch":
                 branchname = args[1];
                 new Repository().setbranch(branchname);
+                break;
+
+            case "rm-branch":
+                branchname = args[1];
+                new Repository().rm_branch(branchname);
                 break;
         }
     }

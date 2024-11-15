@@ -108,13 +108,9 @@ public class StagedArea implements Serializable{
             return;
         }
 
-
         Blob dir_blob = new Blob(file); //file in user's directory
         String blobid = dir_blob.getid(); //blobid is defined by it's path(filename) and content
         String tracked_blobid = getBlobid(tracked, filepath); //file in `tracked`
-
-
-
 
         if(tracked_blobid == null) {
             //a. file name changed, so the track not have to del the previous version of blob(use `removed`)

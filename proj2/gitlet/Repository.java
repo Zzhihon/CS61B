@@ -9,6 +9,7 @@ import java.io.Serializable;
 import java.io.StringReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.Security;
 import java.util.*;
 
 import static gitlet.MyUtils.*;
@@ -125,6 +126,8 @@ public class Repository implements Serializable {
      */
     private final StagedArea stagearea = INDEX.exists() ? readObject(INDEX, StagedArea.class) : new StagedArea();
 
+    private TreeSet<String> global_untracked_sorted = new TreeSet<>();
+    private TreeSet<String> global_unstaged_sorted = new TreeSet<>();
     /* TODO: fill in the rest of this class. */
 
     /**
@@ -219,6 +222,7 @@ public class Repository implements Serializable {
         writeContents(branch, latestCommit.getCommitID());
     }
 
+    //get commit from HEAD
     private static Commit getHeadCommit() {
         String path = ToString(readContents(HEAD)).substring(4);
         File file = new File(path);
@@ -226,19 +230,16 @@ public class Repository implements Serializable {
         return readObject(getobjFile(commitID), Commit.class);
     }
 
-    /**
-     * checkout -- [filename]
-     * Takes the version of the file as it exists in the head commit and
-     *     puts it in the working directory
-     * then overwrite or create the file
-     *
-     * checkout [branchname]
-     *      
-     */
-    public void checkout(String filename) {
-        Commit headcommit = getHeadCommit();
-        checkout(headcommit.getCommitID(), filename, "args3");
+
+
+    public static void globalLog() {
+        StringBuilder logBuilder = new StringBuilder();
+        // As the project spec goes, the runtime should be O(N) where N is the number of commits ever made.
+        // But here I choose to log the commits in the order of created date, which has a runtime of O(NlogN).
+
+        System.out.print(logBuilder);
     }
+
 
     /**
      * If a working file is untracked in the current branch and would be overwritten by the checkout,
@@ -252,18 +253,67 @@ public class Repository implements Serializable {
 
     public void checkoutbranch(String branchname) {
         if (!is_branch_exist(branchname)) {exit("No such branch exists");}
-        if (current_branch == branchname) {exit("No need to checkout the current branch.");}
-
+        if (current_branch.equals(branchname)) {exit("No need to checkout the current branch.");}
         //if (untracked_is_overwrite()) {exit( "There is an untracked file in the way; delete it, or add and commit it first.");}
         File branch = join(HEADS_DIR, branchname);
         String path = branch.getPath();
+        Commit des_commit = readObject(getobjFile(ToString(readContents(branch))), Commit.class);
+        switchbranch(des_commit);
         writeContents(HEAD, "ref " + path);
         current_branch = branchname;
     }
 
-    public boolean untracked_is_overwrite() {
+    public void switchbranch(Commit des_commit) {
+        Commit cur_commit = getHeadCommit();
+        Map<String, String> des_tracked = des_commit.tracked();
+        Map<String, String> cur_tracked = cur_commit.tracked();
+        Map<String, String> added = stagearea.getAdded();
+        getstatus();
+        //int cnt = 20;
+        for (String path : des_tracked.keySet()) {
+            File file = new File(path);
+            String filename = file.getName();
+            if (global_untracked_sorted.contains(filename)){exit("There is an untracked file in the way; delete it, or add and commit it first.");}
+        }
 
-        return false;
+        for( String path : cur_tracked.keySet()) {
+
+            File file = new File(path);
+
+            if(des_tracked.get(path) == null) {
+                file.delete();
+                stagearea.add(file);
+                stagearea.getTracked().remove(path);
+                //writeContents(join(CWD, String.valueOf(cnt)), "success delete");
+            }
+        }
+
+
+        for (String path : des_tracked.keySet()) {
+            File file = new File(path);
+            String des_blobid = getBlobid(des_tracked, path);
+            Blob blob = readObject(getobjFile(des_blobid), Blob.class);
+            writeContents(file, blob.getContent());
+            stagearea.getTracked().put(path, des_blobid);
+        }
+
+        stagearea.saveStageArea(INDEX);
+
+        for (Map.Entry<String, String> entry : added.entrySet() ) {
+            String path = entry.getKey();
+            File file = new File(path);
+            String staged_blobid = entry.getValue();
+            if (des_tracked.equals(path)) {
+                String des_blobid = des_tracked.get(path);
+                if (des_blobid.equals(staged_blobid)) {
+                    if ( !cur_tracked.equals(path)) {file.delete();}
+                    else {  }
+                }
+            }else if(cur_tracked.containsKey(path)) {error("There is an untracked file in the way; delete it, or add and commit it first.");}
+            else { }
+        }
+
+
     }
 
     public boolean is_branch_exist(String branchname) {
@@ -275,7 +325,8 @@ public class Repository implements Serializable {
         return false;
     }
 
-    public static void setbranch(String branchname) {
+    public void setbranch(String branchname) {
+        if (is_branch_exist(branchname)) {exit("A branch with that name already exists.");}
         File branch = join(HEADS_DIR, branchname);
         String commitid = getHeadCommit().getCommitID();
         writeContents(branch, commitid);
@@ -288,19 +339,32 @@ public class Repository implements Serializable {
         return branchname;
     }
 
-    public void checkout(String commitid, String filename, String code) {
+    /**
+     * checkout -- [filename]
+     * Takes the version of the file as it exists in the head commit and
+     *     puts it in the working directory
+     * then overwrite or create the file
+     *
+     * checkout [branchname]
+     *
+     */
+    public void checkout(String filename) {
+        Commit headcommit = getHeadCommit();
+        checkout(headcommit.getCommitID(), filename);
+    }
+
+    public void checkout(String commitid, String filename) {
+        if (!getobjFile(commitid).exists()) {exit("No commit with that id exists.");}
         File file = getFilefromCWD(filename);
         String filePath = getFilefromCWD(filename).getPath();
         Commit commit_tar = readObject(getobjFile(commitid), Commit.class);
-        String content = getBlobcontent(commit_tar, filePath, code);
+        String content = getBlobcontent(commit_tar, filePath);
         writeContents(file, content);
     }
 
-
-    private String getBlobcontent(Commit commit, String filepath, String code) {
+    private String getBlobcontent(Commit commit, String filepath) {
         String blob_shaid = getBlobid(commit.tracked(), filepath);
-        if (blob_shaid == null && code.equals("args4")) { exit("No commit with that id exists.");}
-        else if (blob_shaid == null && code.equals("args3")) { exit("File does not exist in that commit.");}
+        if (blob_shaid == null) { exit("File does not exist in that commit.");}
         String dir_name = blob_shaid.substring(0,2);
         String sur_name = blob_shaid.substring(2);
         File target = join(OBJECTS_DIR,dir_name,sur_name);
@@ -338,6 +402,18 @@ public class Repository implements Serializable {
             currentCommit = Commit.fromFile(firstParentCommitId);
         }
         System.out.print(logBuilder);
+    }
+
+    /**
+     * delete the branch pointer, but not delete the commit of any one
+     * @param branchname
+     */
+    public void rm_branch(String branchname) {
+        if (!is_branch_exist(branchname)) {exit("A branch with that name does not exist.");}
+        if (current_branch.equals(branchname)) {exit("Cannot remove the current branch.");}
+        File file = new File(HEADS_DIR, branchname);
+        file.delete();
+
     }
 
     /**
@@ -466,12 +542,42 @@ public class Repository implements Serializable {
         StringBuilder untracked = new StringBuilder();
         Map<String, String> currentFileMap = getcurrentMap();
         Map<String, String> tracked = stagearea.getTracked();
-        TreeSet<String> unstaged_sorted = new TreeSet<>();
-        TreeSet<String> untracked_sorted = new TreeSet<>();
+
 
 
         unstaged.append("=== Modifications Not Staged For Commit ===").append("\n");
         untracked.append("=== Untracked Files ===").append("\n");
+        getstatus();
+        TreeSet<String> unstaged_sorted = global_unstaged_sorted;
+        TreeSet<String> untracked_sorted = global_untracked_sorted;
+
+        for (String filename : unstaged_sorted) {
+            unstaged.append(filename).append("\n");
+        }
+
+        for (String filename : untracked_sorted) {
+            untracked.append(filename).append("\n");
+        }
+        statusbuilder.append(unstaged).append("\n");
+        statusbuilder.append(untracked).append("\n");
+
+
+
+        System.out.print(statusbuilder);
+        //untracked files
+    }
+
+    private void getstatus() {
+        Map<String, String> added = stagearea.getAdded();
+        Map<String, String> currentFileMap = getcurrentMap();
+        Map<String, String> tracked = stagearea.getTracked();
+        Set<String> removed = stagearea.getRemoved();
+        getstatus(currentFileMap, tracked, added, removed);
+    }
+
+    private void getstatus(Map<String, String> currentFileMap, Map<String, String> tracked, Map<String, String> added, Set<String> removed ) {
+        TreeSet<String> unstaged_sorted = new TreeSet<>();
+        TreeSet<String> untracked_sorted = new TreeSet<>();
 
         for (Map.Entry<String, String> entry : currentFileMap.entrySet()) {
             String filepath = entry.getKey();
@@ -501,18 +607,9 @@ public class Repository implements Serializable {
             unstaged_sorted.add(filename);
         }
 
-        for (String filename : unstaged_sorted) {
-            unstaged.append(filename).append("\n");
-        }
 
-        for (String filename : untracked_sorted) {
-            untracked.append(filename).append("\n");
-        }
-        statusbuilder.append(unstaged).append("\n");
-        statusbuilder.append(untracked).append("\n");
-
-        System.out.print(statusbuilder);
-        //untracked files
+        global_unstaged_sorted = unstaged_sorted;
+        global_untracked_sorted = untracked_sorted;
     }
 }
 
