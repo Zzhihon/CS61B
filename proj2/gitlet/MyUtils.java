@@ -47,6 +47,28 @@ public class MyUtils {
         return join(Repository.OBJECTS_DIR, dirName, surName);
     }
 
+    public static Commit getCommitObj(String commitid) {
+        Commit commit = readObject(getobjFile(commitid), Commit.class);
+        return commit;
+    }
+
+    public static Set<Commit> getAllCommit(File[] AllCommitDirs) {
+        Set<Commit> AllCommits = new HashSet<>();
+        for (File dir : AllCommitDirs ) {
+            File[] commitsFiles = dir.listFiles(File::isFile);
+            for (File file : commitsFiles) {
+                try {
+                    Commit commit = readObject(file, Commit.class);
+                    AllCommits.add(commit);
+
+                }catch (IllegalArgumentException e) {
+                    continue;
+                }
+            }
+        }
+        return AllCommits;
+    }
+
     public static void clearFile(File file) {
         try (FileOutputStream fos = new FileOutputStream(file, false)) {
         } catch (IOException e) {

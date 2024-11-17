@@ -166,7 +166,7 @@ public class StagedArea implements Serializable{
         return tracked;
     }
 
-    private void clear() {
+    public void clear() {
         added.clear();
         removed.clear();
     }

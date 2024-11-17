@@ -6,10 +6,8 @@ import static gitlet.MyUtils.createDir;
 import java.io.File;
 import java.io.Serializable;
 
-import java.io.StringReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.Security;
 import java.util.*;
 
 import static gitlet.MyUtils.*;
@@ -126,6 +124,15 @@ public class Repository implements Serializable {
      */
     private final StagedArea stagearea = INDEX.exists() ? readObject(INDEX, StagedArea.class) : new StagedArea();
 
+    /**
+     * get all commitfile
+     */
+    private final File[] AllCommitDirs = OBJECTS_DIR.listFiles(File::isDirectory);
+
+    /**
+     * get unstaged in status
+     * get untracked in status
+     */
     private TreeSet<String> global_untracked_sorted = new TreeSet<>();
     private TreeSet<String> global_unstaged_sorted = new TreeSet<>();
     /* TODO: fill in the rest of this class. */
@@ -201,7 +208,8 @@ public class Repository implements Serializable {
         Map<String, String> tracked = stagearea.commit();
         List<String> parentid = new ArrayList<>();
         if (HEAD.exists()) {
-            Commit commit = getHeadCommit();
+            //the parent commitid should be in current branch
+            Commit commit = getcurrentbranchHeadCommit(current_branch);
             parentid.add(commit.getCommitID());
         }
         Commit newcommit = new Commit(msg, tracked, parentid);
@@ -209,6 +217,17 @@ public class Repository implements Serializable {
         stagearea.saveStageArea(INDEX);
         updateHEAD();
         updateHEADS(newcommit);
+    }
+
+    public void find(String msg) {
+        StringBuilder msgTocommit = new StringBuilder();
+
+    }
+
+    public Commit getcurrentbranchHeadCommit(String branchname) {
+        File file = join(HEADS_DIR, branchname);
+        Commit commit = getCommitObj(ToString(readContents(file)));
+        return commit;
     }
 
     public void updateHEAD() {
@@ -227,16 +246,19 @@ public class Repository implements Serializable {
         String path = ToString(readContents(HEAD)).substring(4);
         File file = new File(path);
         String commitID =  ToString(readContents(file));
-        return readObject(getobjFile(commitID), Commit.class);
+        return getCommitObj(commitID);
     }
 
 
 
-    public static void globalLog() {
+    public void globalLog() {
         StringBuilder logBuilder = new StringBuilder();
         // As the project spec goes, the runtime should be O(N) where N is the number of commits ever made.
         // But here I choose to log the commits in the order of created date, which has a runtime of O(NlogN).
-
+        Set<Commit> AllCommits = getAllCommit(AllCommitDirs);
+        for (Commit commit : AllCommits) {
+            logBuilder.append(commit.putlog()).append("\n");
+        }
         System.out.print(logBuilder);
     }
 
@@ -288,7 +310,6 @@ public class Repository implements Serializable {
             }
         }
 
-
         for (String path : des_tracked.keySet()) {
             File file = new File(path);
             String des_blobid = getBlobid(des_tracked, path);
@@ -296,6 +317,7 @@ public class Repository implements Serializable {
             writeContents(file, blob.getContent());
             stagearea.getTracked().put(path, des_blobid);
         }
+        stagearea.clear();
 
         stagearea.saveStageArea(INDEX);
 
@@ -313,6 +335,15 @@ public class Repository implements Serializable {
             else { }
         }
 
+
+    }
+
+    public void reset(String commitid) {
+        Commit headcommit = getHeadCommit();
+        Commit commit = getCommitObj(commitid);
+        switchbranch(commit);
+        File file = join(HEADS_DIR, current_branch);
+        writeContents(file, commitid);
 
     }
 

@@ -88,6 +88,16 @@ public class Main {
                 branchname = args[1];
                 new Repository().rm_branch(branchname);
                 break;
+
+            case "global-log":
+                new Repository().globalLog();
+                break;
+
+            case "reset":
+                String commitid = args[1];
+                new Repository().reset(commitid);
+                break;
+
         }
     }
 }
