@@ -181,13 +181,22 @@ public class Repository implements Serializable {
         //writeObject(head, (Serializable) inital_commit);
 
     }
+    /**
+     * Exit if the repository at the current working directory is not initialized.
+     */
+    public static void checkWorkingDir() {
+        if (!(GITLET_DIR.exists() && GITLET_DIR.isDirectory())) {
+            exit("Not in an initialized Gitlet directory.");
+        }
+    }
 
     /**
      * add untracked&&modified to StageArea
      */
     public void add(String filename) {
         File file = getFilefromCWD(filename);
-        if (!file.exists()) {exit("File does not exist.");}
+        getstatus();
+        if (!file.exists() && !global_unstaged_sorted.contains(filename) ) {exit("File does not exist.");}
         stagearea.add(file);
         boolean flag = stagearea.get_is_modify_index();
         if (flag) stagearea.saveStageArea(INDEX);
@@ -339,7 +348,7 @@ public class Repository implements Serializable {
     }
 
     public void reset(String commitid) {
-        Commit headcommit = getHeadCommit();
+        if (!getobjFile(commitid).exists()) {exit("No commit with that id exists.");}
         Commit commit = getCommitObj(commitid);
         switchbranch(commit);
         File file = join(HEADS_DIR, current_branch);
@@ -370,6 +379,15 @@ public class Repository implements Serializable {
         return branchname;
     }
 
+    private String getEntireCommitID(String commitid) {
+        Set<Commit> AllCommits = getAllCommit(AllCommitDirs);
+        for (Commit commit : AllCommits) {
+            if (commitid.equals(commit.getCommitID().substring(0,8)));
+                return commit.getCommitID();
+        }
+        return null;
+    }
+
     /**
      * checkout -- [filename]
      * Takes the version of the file as it exists in the head commit and
@@ -385,10 +403,12 @@ public class Repository implements Serializable {
     }
 
     public void checkout(String commitid, String filename) {
+        if (commitid.length() == 8) { commitid = getEntireCommitID(commitid);}
+        if (commitid == null) {exit("No commit with that id exists.");}
         if (!getobjFile(commitid).exists()) {exit("No commit with that id exists.");}
         File file = getFilefromCWD(filename);
         String filePath = getFilefromCWD(filename).getPath();
-        Commit commit_tar = readObject(getobjFile(commitid), Commit.class);
+        Commit commit_tar = getCommitObj(commitid);
         String content = getBlobcontent(commit_tar, filePath);
         writeContents(file, content);
     }

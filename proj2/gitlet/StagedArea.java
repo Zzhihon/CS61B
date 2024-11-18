@@ -81,6 +81,7 @@ public class StagedArea implements Serializable{
         return removed;
     }
 
+
     public void saveIndex(File file, StagedArea stagearea) {
         writeObject(file, (Serializable) stagearea);
     }

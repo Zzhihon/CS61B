@@ -98,6 +98,11 @@ public class Main {
                 new Repository().reset(commitid);
                 break;
 
+            default:
+                {exit("No command with that name exists.");}
+                break;
+
+
         }
     }
 }
