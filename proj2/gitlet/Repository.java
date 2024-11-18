@@ -391,8 +391,9 @@ public class Repository implements Serializable {
     private String getEntireCommitID(String commitid) {
         Set<Commit> AllCommits = getAllCommit(AllCommitDirs);
         for (Commit commit : AllCommits) {
-            if (commitid.equals(commit.getCommitID().substring(0,8)));
+            if (commitid.equals(commit.getCommitID().substring(0,8))) {
                 return commit.getCommitID();
+            }
         }
         return null;
     }
@@ -424,6 +425,7 @@ public class Repository implements Serializable {
 
     private String getBlobcontent(Commit commit, String filepath) {
         String blob_shaid = getBlobid(commit.tracked(), filepath);
+        writeContents(join(CWD,"test"), commit.getCommitID());
         if (blob_shaid == null) { exit("File does not exist in that commit.");}
         String dir_name = blob_shaid.substring(0,2);
         String sur_name = blob_shaid.substring(2);

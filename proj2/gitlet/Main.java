@@ -30,18 +30,21 @@ public class Main {
 
                 break;
             case "add":
+                Repository.checkWorkingDir();
                 String filename = args[1];
                 // TODO: handle the `add [filename]` command
                 new Repository().add(filename);
                 break;
 
             case "commit":
+                Repository.checkWorkingDir();
                 if (args.length == 1) {exit("Please enter a commit message.");}
                 String msg = args[1];
                 new Repository().commit(msg);
                 break;
 
             case "checkout":
+                Repository.checkWorkingDir();
                 String branchname;
                 switch (args.length) {
                     case 3:
@@ -67,35 +70,56 @@ public class Main {
                 break;
 
             case "log":
+                Repository.checkWorkingDir();
+
                 new Repository().log();
                 break;
 
             case "rm":
+                Repository.checkWorkingDir();
+
                 filename = args[1];
                 new Repository().rm(filename);
                 break;
 
             case "status":
+                Repository.checkWorkingDir();
+
                 new Repository().status();
                 break;
 
             case "branch":
+                Repository.checkWorkingDir();
+
                 branchname = args[1];
                 new Repository().setbranch(branchname);
                 break;
 
             case "rm-branch":
+                Repository.checkWorkingDir();
+
                 branchname = args[1];
                 new Repository().rm_branch(branchname);
                 break;
 
             case "global-log":
+                Repository.checkWorkingDir();
+
                 new Repository().globalLog();
                 break;
 
             case "reset":
+                Repository.checkWorkingDir();
+
                 String commitid = args[1];
                 new Repository().reset(commitid);
+                break;
+
+            case "find":
+                Repository.checkWorkingDir();
+
+                msg = args[1];
+                new Repository().find(msg);
                 break;
 
             default:
