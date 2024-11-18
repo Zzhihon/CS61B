@@ -108,7 +108,7 @@ public class Commit implements Serializable, Dumpable{
         return CommitID;
     }
 
-    public String message() {
+    public String getMessage() {
         return message;
     }
 

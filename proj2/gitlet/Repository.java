@@ -230,7 +230,16 @@ public class Repository implements Serializable {
 
     public void find(String msg) {
         StringBuilder msgTocommit = new StringBuilder();
-
+        boolean flag = false;
+        Set<Commit> AllCommits = getAllCommit(AllCommitDirs);
+        for (Commit commit : AllCommits) {
+            if (msg.equals(commit.getMessage())) {
+                msgTocommit.append(commit.getCommitID()).append("\n");
+                flag = true;
+            }
+        }
+        if (!flag) {exit("Found no commit with that message.");}
+        System.out.print(msgTocommit);
     }
 
     public Commit getcurrentbranchHeadCommit(String branchname) {
